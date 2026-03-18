@@ -5,8 +5,8 @@ import pandas as pd
 HOST = "127.0.0.1"
 PORT = 5000
 print("Loading model...")
-model = joblib.load(r"C:\Users\garvi\OneDrive\Documents\Code\Real-Time Stress and Emotion Detection System\stress_model.pkl")
-scaler = joblib.load(r"C:\Users\garvi\OneDrive\Documents\Code\Real-Time Stress and Emotion Detection System\feature_scaler.pkl")
+model = joblib.load([INSERT LOCATION OF TRAINED MODEL])
+scaler = joblib.load([INSERT LOCATION OF TRAINED MODEL])
 print("Model loaded.")
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
