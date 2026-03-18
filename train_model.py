@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier #Used to implement Random Fo
 from imblearn.over_sampling import SMOTE #Used to balance the dataset
 import joblib #Used to save the trained models to the disk
 
-data = pd.read_csv([INSERT LOCATION OF CSV FILE], header=None) #Used to load the CSV file
+data = pd.read_csv([INSERT LOCATION OF THE CSV FILE], header=None) #Used to load the CSV file
 print("Original dataset shape:", data.shape) #Prints the rows and columns in the CSV file
 data = data[(data[0] > 0.1) & (data[0] < 0.6)] #Filters out extremely small and large values of EAR
 data = data[(data[1] > 0.1) & (data[1] < 2.5)] #Filters out extremely small and large values of MAR
