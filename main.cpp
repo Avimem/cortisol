@@ -123,28 +123,90 @@ int main(){
                 predictions.pop_front();
 
             int stressCount = 0; //Used to count the "Stress" predictions in the buffer
-            int relaxCount = 0; //Used to count the "Relaxed" predictions in the buffer
 
             for(int p : predictions){ //Used to loop through the stored predictions
                 if(p==1) stressCount++;
-                else relaxCount++;
             }
 
-            bool smileDetected = (mouth_w / face_w) > 0.45; //Used to detect if the person is smiling by calculating if the width of the mouth is large
-            bool angerCue = (brow_dist / face_w) < 0.18 && ear < 0.26; //Used to detect if the person is angry by calculating if the eyes are narrow and the eyebrows are lowered
-            bool stressed; //Used to store the final stress detection
+            bool stressed = stressCount > BUFFER / 2; //Used to store the final stress detection
+            string emotion; //Used to store the emotion
+            double smileRatio = mouth_w / face_w; //Used to calculate if a person is smiling
+            double browRatio = brow_dist / face_w; //Used to calculate if a person is showing fear
 
-            if(smileDetected){ //Enters this block if the person is smiling
-                stressed = false;
+            if(smileRatio > 0.42){ //Enters this block if person is smiling
+                emotion = "Happy";
             }
-            else if(angerCue){ //Enters this block if the person is angry
+            else if(mar > 0.65 && ear > 0.27){ //Enters this block if person is in fear
+                emotion = "Fear";
+            }
+            else if(browRatio < 0.17 && ear < 0.27){ //Enters this block if person is angry
+                emotion = "Angry";
+            }
+            else if(ear < 0.22){ //Enters this block if person is sad
+                emotion = "Sad";
+            }
+            else{ //Enters this block if none of the above cases are true
+                emotion = "Neutral";
+            }
+
+            if(emotion == "Fear"){ //Sets the stress label to be true if person is in a state of fear
                 stressed = true;
             }
-            else{
-                stressed = stressCount > relaxCount;
+            if(emotion == "Angry"){ //Sets the stress label to be true if person is in a state of anger
+                stressed = true; 
+            }
+            if(emotion == "Happy"){ //Sets the stress label to be true of person is in a state of happiness
+                stressed = false;
             }
 
-            putText(frame, stressed ? "STRESSED" : "RELAXED", Point(20,40), FONT_HERSHEY_SIMPLEX, 0.8, stressed ? Scalar(0,0,255) : Scalar(0,255,0), 2); //Used to display the result on screen with green text if the person is relaxed or with red text if the person is stressed
+            static deque<string> emotionBuffer; //Used to create an emotion buffer
+            emotionBuffer.push_back(emotion); //Used to push the detected emotion into the buffer
+
+            if(emotionBuffer.size() > BUFFER){ //Enters this block if the emotion buffer overflows
+                emotionBuffer.pop_front();
+            }
+
+            map<string, int> emotionCount; //Used to smooth the emotion prediction results
+
+            for(string e : emotionBuffer){ //Used to check which emotions are present in the buffer
+                emotionCount[e]++;
+            }
+
+            string finalEmotion = "Neutral"; //Used to store the final emotion detection with a default value of "Neutral"
+            int maxCount = 0; //Used to count which emotion has the most frequency in the buffer
+
+            for(auto &p : emotionCount){ //Iterates through the dictionary to see which emotion has the most frequency
+                if(p.second > maxCount){
+                    maxCount = p.second;
+                    finalEmotion = p.first;
+                }
+            }
+
+            Mat overlay; //Used to create a semi-transparent overlay
+            frame.copyTo(overlay); //Used to copy the current frame to the overlay
+            rectangle(overlay, Point(10,10), Point(320,130), Scalar(0,0,0), -1); //Used to draw a black filled rectangle on the overlay
+            addWeighted(overlay, 0.5, frame, 0.5, 0, frame); //Used to blend the overlay with the original frame
+            putText(frame, "Stress Detection System", Point(20,30), FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255,255,255), 2); //Used to draw the title on the overlay
+            string statusText = stressed ? "STRESSED" : "RELAXED"; //Used to store the current status of the user which will be displayed on the screen
+            putText(frame, "Status: " + statusText, Point(20,60), FONT_HERSHEY_SIMPLEX, 0.7, stressed ? Scalar(0,0,255) : Scalar(0,255,0), 2); //Used to display the user's current status in red text if they are stressed or in green text if they are relaxed
+            putText(frame, "Emotion: " + finalEmotion, Point(20,85), FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0,255,0), 2); //Used to display the user's current emotion on the screen
+            int confidence = (maxCount * 100) / emotionBuffer.size(); //Used to calculate the confidence percentage of the user's current status
+            rectangle(frame, Point(20,100), Point(220,115), Scalar(100,100,100), -1); //Used to draw a grey background bar on the overlay
+            int barWidth = (confidence * 200) / 100; //Used to scale the bar according to the confidence level
+            Scalar barColor; //Used to store the color of the confidence bar
+
+            if(confidence > 70){ //Enters this block if the confidence level is more than 70
+                barColor = Scalar(0,255,0);
+            }    
+            else if(confidence > 40){ //Enters this block if the confidence level is more than 40
+                barColor = Scalar(0,255,255);
+            }    
+            else{ //Enters this block if the confidence level is less than 40
+                barColor = Scalar(0,0,255);
+            }    
+
+            rectangle(frame, Point(20,100), Point(20+barWidth,115), barColor, -1); //Used to draw the resulting color in the bar
+            putText(frame, to_string(confidence) + "%", Point(230,112), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 2); //Used to display the confidence percentage
         }
 
         imshow("Stress Detection",frame); //Used to display the webcam feed
